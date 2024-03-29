@@ -7,6 +7,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/oapi-codegen/nethttp-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.1
+	golang.org/x/crypto v0.17.0
 )
 
 require (
