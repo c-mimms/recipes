@@ -3,6 +3,7 @@ generate:
   chi-server: true
   models: true
   embedded-spec: true
+  strict-server: true
 compatibility:
   apply-chi-middleware-first-to-last: true
 output: recipeapi.gen.go
