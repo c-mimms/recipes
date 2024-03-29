@@ -73,6 +73,11 @@
       "post": {
         "summary": "Create a new recipe",
         "operationId": "createRecipe",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "description": "Recipe to be created",
           "content": {
@@ -155,6 +160,11 @@
       "put": {
         "summary": "Update an existing recipe",
         "operationId": "updateRecipe",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -192,6 +202,11 @@
       "delete": {
         "summary": "Delete a recipe",
         "operationId": "deleteRecipe",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -310,6 +325,13 @@
             }
           }
         ]
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   }

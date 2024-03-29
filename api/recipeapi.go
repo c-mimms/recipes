@@ -2,8 +2,11 @@ package api
 
 import (
 	"context"
+	"fmt"
+
 	"sync"
 
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,6 +36,14 @@ func NewRecipeStore() *RecipeStore {
 	}
 }
 
+func (p *RecipeStore) NewAuthenticator() openapi3filter.AuthenticationFunc {
+	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+		//Log request and context to ensure auth is called for expected routes
+		fmt.Println("Authenticating request", input.RequestValidationInput.Request.URL.Path, ctx)
+		return nil
+	}
+}
+
 func (p *RecipeStore) CreateUser(_ context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error) {
 	//Secure hash password before storing
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(request.Body.Password), 8)
@@ -59,18 +70,18 @@ func (p *RecipeStore) LoginUser(_ context.Context, request LoginUserRequestObjec
 		return LoginUser401Response{}, nil
 	}
 
-	//Generate new auth token
-	//TODO implement this
-	token := "authToken"
-
 	if nil == bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Body.Password)) {
+		//Generate new auth token
+		//TODO implement JWT token generation
+		token := string(user.Email)
+
 		return LoginUser200JSONResponse(LoginResponse{Token: &token}), nil
 	}
 
 	return LoginUser401Response{}, nil
 }
 
-func (p *RecipeStore) CreateRecipe(_ context.Context, request CreateRecipeRequestObject) (CreateRecipeResponseObject, error) {
+func (p *RecipeStore) CreateRecipe(ctx context.Context, request CreateRecipeRequestObject) (CreateRecipeResponseObject, error) {
 	// We're always asynchronous, so lock unsafe operations below
 	p.Lock.Lock()
 	defer p.Lock.Unlock()
