@@ -1,4 +1,4 @@
-package: recipeapi
+package: api
 generate:
   chi-server: true
   models: true
