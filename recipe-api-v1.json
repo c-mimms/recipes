@@ -86,7 +86,14 @@
           },
           "responses": {
             "201": {
-              "description": "Recipe created successfully"
+                "description": "Recipe created sucessfully",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Recipe"
+                    }
+                  }
+                }
             },
             "400": {
               "description": "Invalid input"
