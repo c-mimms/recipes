@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"recipeApi/api"
+	"recipeApi/storage"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
@@ -30,11 +31,23 @@ func newAuthenticator() openapi3filter.AuthenticationFunc {
 	}
 }
 
+// func setupDatabase() *pgxpool.Pool {
+// 	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+// 	if err != nil {
+// 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+// 		os.Exit(1)
+// 	}
+// 	defer dbpool.Close()
+
+// }
+
 func main() {
+	// pool := setupDatabase()
+
 	port := flag.String("port", "8080", "Port for test HTTP server")
 	flag.Parse()
 
-	recipeStore := api.NewRecipeStore()
+	recipeStore := NewService(storage.NewInMemoryUserStore(), storage.NewInMemoryRecipeStore())
 	recipeStoreStrictHandler := api.NewStrictHandler(recipeStore, nil)
 
 	r := chi.NewRouter()
@@ -42,7 +55,7 @@ func main() {
 	r.Use(middleware.Logger)
 	// Use middleware to check all requests against the
 	// OpenAPI schema and authenticate requests
-	validator := api.CreateAuthMiddleware(newAuthenticator())
+	validator := CreateAuthMiddleware(newAuthenticator())
 	r.Use(validator)
 
 	api.HandlerFromMux(recipeStoreStrictHandler, r)
