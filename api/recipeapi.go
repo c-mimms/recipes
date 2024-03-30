@@ -40,17 +40,12 @@ func NewRecipeStore() *RecipeStore {
 }
 
 // Creaates middleware to validate requests against the OpenAPI schema and authenticate requests
-func CreateMiddleware(authenticator openapi3filter.AuthenticationFunc) func(next http.Handler) http.Handler {
+func CreateAuthMiddleware(authenticator openapi3filter.AuthenticationFunc) func(next http.Handler) http.Handler {
 	spec, err := GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
 		os.Exit(1)
 	}
-
-	fmt.Println("Loaded swagger spec")
-
-	// Clear out the servers array in the swagger spec, that skips validating
-	// that server names match. We don't know how this thing will be run.
 	spec.Servers = nil
 
 	return nethttpmiddleware.OapiRequestValidatorWithOptions(spec,
