@@ -3,10 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
 
 	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
+	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -36,12 +39,26 @@ func NewRecipeStore() *RecipeStore {
 	}
 }
 
-func (p *RecipeStore) NewAuthenticator() openapi3filter.AuthenticationFunc {
-	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-		//Log request and context to ensure auth is called for expected routes
-		fmt.Println("Authenticating request", input.RequestValidationInput.Request.URL.Path, ctx)
-		return nil
+// Creaates middleware to validate requests against the OpenAPI schema and authenticate requests
+func CreateMiddleware(authenticator openapi3filter.AuthenticationFunc) func(next http.Handler) http.Handler {
+	spec, err := GetSwagger()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
+		os.Exit(1)
 	}
+
+	fmt.Println("Loaded swagger spec")
+
+	// Clear out the servers array in the swagger spec, that skips validating
+	// that server names match. We don't know how this thing will be run.
+	spec.Servers = nil
+
+	return nethttpmiddleware.OapiRequestValidatorWithOptions(spec,
+		&nethttpmiddleware.Options{
+			Options: openapi3filter.Options{
+				AuthenticationFunc: authenticator,
+			},
+		})
 }
 
 func (p *RecipeStore) CreateUser(_ context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error) {
