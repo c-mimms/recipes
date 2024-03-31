@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -31,6 +33,7 @@ func convertRecipe(recipe storage.Recipe) api.Recipe {
 type Service struct {
 	UserDB   storage.UserDatastore
 	RecipeDB storage.RecipeDatastore
+	ApiKeys  map[string]string
 }
 
 var _ api.StrictServerInterface = (*Service)(nil)
@@ -39,6 +42,7 @@ func NewService(userStore storage.UserDatastore, recipeStore storage.RecipeDatas
 	return &Service{
 		UserDB:   userStore,
 		RecipeDB: recipeStore,
+		ApiKeys:  make(map[string]string),
 	}
 }
 
@@ -72,21 +76,27 @@ func (p *Service) CreateUser(_ context.Context, request api.CreateUserRequestObj
 	return api.CreateUser201Response{}, nil
 }
 func (p *Service) LoginUser(_ context.Context, request api.LoginUserRequestObject) (api.LoginUserResponseObject, error) {
-	//Check if user exists and password matches after hashing
 	user, err := p.UserDB.ReadUser(string(request.Body.Email))
 	if err != nil {
 		return api.LoginUser401Response{}, nil
 	}
 
 	if nil == bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Body.Password)) {
-		//Generate new auth token
-		//TODO implement JWT token generation
-		token := string(user.Email)
-
+		token := generateNewToken()
+		p.ApiKeys[user.Email] = token
 		return api.LoginUser200JSONResponse(api.LoginResponse{Token: &token}), nil
 	}
 
 	return api.LoginUser401Response{}, nil
+}
+
+func generateNewToken() string {
+	b := make([]byte, 15)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 func (p *Service) CreateRecipe(ctx context.Context, request api.CreateRecipeRequestObject) (api.CreateRecipeResponseObject, error) {
@@ -96,7 +106,11 @@ func (p *Service) CreateRecipe(ctx context.Context, request api.CreateRecipeRequ
 	recipe.Ingredients = request.Body.Ingredients
 	recipe.Steps = request.Body.Steps
 
-	createdRecipe, _ := p.RecipeDB.CreateRecipe(recipe)
+	createdRecipe, err := p.RecipeDB.CreateRecipe(recipe)
+
+	if err != nil {
+		return api.CreateRecipe400Response{}, nil
+	}
 
 	return api.CreateRecipe201JSONResponse(convertRecipe(createdRecipe)), nil
 }
@@ -114,19 +128,35 @@ func (p *Service) ListRecipes(context.Context, api.ListRecipesRequestObject) (ap
 
 func (p *Service) GetRecipeById(_ context.Context, request api.GetRecipeByIdRequestObject) (api.GetRecipeByIdResponseObject, error) {
 
-	recipe, _ := p.RecipeDB.ReadRecipe(request.Id)
+	recipe, err := p.RecipeDB.ReadRecipe(request.Id)
+	if err != nil {
+		return api.GetRecipeById404Response{}, nil
+	}
 
 	return api.GetRecipeById200JSONResponse(convertRecipe(recipe)), nil
 }
 
-func (p *Service) UpdateRecipe(context.Context, api.UpdateRecipeRequestObject) (api.UpdateRecipeResponseObject, error) {
-	//TODO implement
-	return api.UpdateRecipe404Response{}, nil
+func (p *Service) UpdateRecipe(_ context.Context, request api.UpdateRecipeRequestObject) (api.UpdateRecipeResponseObject, error) {
+	var recipe storage.Recipe
+	recipe.Title = request.Body.Title
+	recipe.Description = request.Body.Description
+	recipe.Ingredients = request.Body.Ingredients
+	recipe.Steps = request.Body.Steps
+
+	err := p.RecipeDB.UpdateRecipe(request.Id, recipe)
+	if err != nil {
+		return api.UpdateRecipe404Response{}, nil
+	}
+
+	return api.UpdateRecipe200Response{}, nil
 }
 
 func (p *Service) DeleteRecipe(_ context.Context, request api.DeleteRecipeRequestObject) (api.DeleteRecipeResponseObject, error) {
 
-	p.RecipeDB.DeleteRecipe(request.Id)
+	err := p.RecipeDB.DeleteRecipe(request.Id)
+	if err != nil {
+		return api.DeleteRecipe404Response{}, nil
+	}
 
 	return api.DeleteRecipe200Response{}, nil
 }

@@ -40,3 +40,7 @@ This is a go service for managing recipes. This project uses go-chi for routing 
 
 - `LoginResponse`: Returned when a user logs in successfully.
   - `token`: A string that represents the authentication token.
+
+
+## Dev
+To run migrations on dev : Install go migrate. `migrate -path ./db/migrations/ -database "postgresql://postgres:postgres@localhost:5433/postgres?sslmode=disable" up`

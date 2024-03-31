@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
 
 	"recipeApi/api"
 	"recipeApi/storage"
@@ -14,6 +16,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func newAuthenticator() openapi3filter.AuthenticationFunc {
@@ -36,22 +39,30 @@ func newAuthenticator() openapi3filter.AuthenticationFunc {
 	}
 }
 
-// func setupDatabase() *pgxpool.Pool {
-// 	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
-// 	if err != nil {
-// 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-// 		os.Exit(1)
-// 	}
-// 	defer dbpool.Close()
-// }
+func setupDatabase(db_url string) *pgxpool.Pool {
+	dbpool, err := pgxpool.New(context.Background(), db_url)
+	println(os.Getenv("DATABASE_URL"))
+	println(db_url)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
+	}
+
+	return dbpool
+}
 
 func main() {
-	// pool := setupDatabase()
-
 	port := flag.String("port", "8080", "Port for test HTTP server")
+	db_url := flag.String("db_url", "postgresql://postgres:postgres@localhost/postgres", "Db url for test HTTP server")
 	flag.Parse()
 
-	recipeStore := NewService(storage.NewInMemoryUserStore(), storage.NewInMemoryRecipeStore())
+	pool := setupDatabase(*db_url)
+	defer pool.Close()
+
+	postgresStore, _ := storage.NewPostgresDatastore(pool)
+	recipeStore := NewService(postgresStore, postgresStore)
+
+	// recipeStore := NewService(storage.NewInMemoryUserStore(), storage.NewInMemoryRecipeStore())
 	recipeStoreStrictHandler := api.NewStrictHandler(recipeStore, nil)
 
 	r := chi.NewRouter()
