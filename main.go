@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -52,11 +51,17 @@ func setupDatabase(db_url string) *pgxpool.Pool {
 }
 
 func main() {
-	port := flag.String("port", "8080", "Port for test HTTP server")
-	db_url := flag.String("db_url", "postgresql://postgres:postgres@localhost/postgres", "Db url for test HTTP server")
-	flag.Parse()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	pool := setupDatabase(*db_url)
+	db_url := os.Getenv("DATABASE_URL")
+	if db_url == "" {
+		db_url = "postgresql://postgres:postgres@localhost/postgres"
+	}
+
+	pool := setupDatabase(db_url)
 	defer pool.Close()
 
 	postgresStore, _ := storage.NewPostgresDatastore(pool)
@@ -77,7 +82,7 @@ func main() {
 
 	s := &http.Server{
 		Handler: r,
-		Addr:    net.JoinHostPort("0.0.0.0", *port),
+		Addr:    net.JoinHostPort("0.0.0.0", port),
 	}
 
 	log.Fatal(s.ListenAndServe())
