@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -19,15 +19,20 @@ import (
 func newAuthenticator() openapi3filter.AuthenticationFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 		//Log request and context to ensure auth is called for expected routes
-		fmt.Println("Authenticating request", input.RequestValidationInput.Request.URL.Path, ctx)
+		// fmt.Println("Authenticating request", input.RequestValidationInput.Request.URL.Path, ctx)
 
 		// Extract the auth header
 		authHdr := input.RequestValidationInput.Request.Header.Get("Authorization")
-		fmt.Println("Auth header : ", authHdr)
+		// fmt.Println("Auth header : ", authHdr)
 
-		//Validate
+		//Parse the auth header and verify the token
+		//TODO add token cache, check for real, and set user in context
+		authHdr = authHdr[len("Bearer "):]
+		if authHdr == "test" {
+			return nil
+		}
 
-		return nil
+		return errors.New("invalid token")
 	}
 }
 
@@ -38,7 +43,6 @@ func newAuthenticator() openapi3filter.AuthenticationFunc {
 // 		os.Exit(1)
 // 	}
 // 	defer dbpool.Close()
-
 // }
 
 func main() {
