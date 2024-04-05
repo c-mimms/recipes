@@ -2,6 +2,8 @@
 
 This is a go service for managing recipes. This project uses go-chi for routing and [oapi-codegen](https://github.com/deepmap/oapi-codegen) to generate boilerplate from the OpenAPI spec defined [here](./recipe-api-v1.json).
 
+[Example.html](http://htmlpreview.github.io/?https://github.com/c-mimms/recipes/blob/main/example.html) is an example usage of the unauthenticated list recipes api from JS.
+
 ## Endpoints
 
 - `/recipes`
