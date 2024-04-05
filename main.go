@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/cors"
 )
 
 func newAuthenticator() openapi3filter.AuthenticationFunc {
@@ -73,6 +74,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
+	r.Use(cors.Default().Handler)
 	// Use middleware to check all requests against the
 	// OpenAPI schema and authenticate requests
 	validator := CreateAuthMiddleware(newAuthenticator())
