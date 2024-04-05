@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Recipe List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .recipe {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .recipe h3 {
+            margin: 0 0 10px 0;
+        }
+
+        .recipe h4 {
+            margin: 10px 0 5px 0;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Recipes</h1>
+    <div id="recipes"></div>
+
+    <script>
+        const apiURL = 'https://recipeapi.fly.dev/recipes';
+
+        async function fetchRecipes() {
+            try {
+                const response = await fetch(apiURL);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const recipes = await response.json();
+                displayRecipes(recipes);
+            } catch (error) {
+                console.error('Fetching error:', error);
+            }
+        }
+        function displayRecipes(recipes) {
+            const container = document.getElementById('recipes');
+            container.innerHTML = ''; // Clear the container
+
+            recipes.forEach(recipe => {
+                const recipeElem = document.createElement('div');
+                recipeElem.className = 'recipe';
+
+                const title = document.createElement('h3');
+                title.textContent = recipe.title;
+                title.style.cursor = 'pointer';
+
+                const detailDiv = document.createElement('div');
+                detailDiv.style.display = 'none'; // Initially hide the details
+
+                const description = document.createElement('p');
+                description.textContent = `Description: ${recipe.description}`;
+
+                const ingredientsHeader = document.createElement('h4');
+                ingredientsHeader.textContent = 'Ingredients';
+                const ingredientsList = document.createElement('ul');
+                recipe.ingredients.forEach(ingredient => {
+                    const item = document.createElement('li');
+                    item.textContent = ingredient;
+                    ingredientsList.appendChild(item);
+                });
+
+                const stepsHeader = document.createElement('h4');
+                stepsHeader.textContent = 'Steps';
+                const stepsList = document.createElement('ol');
+                recipe.steps.forEach(step => {
+                    const stepItem = document.createElement('li');
+                    stepItem.textContent = step;
+                    stepsList.appendChild(stepItem);
+                });
+
+                title.addEventListener('click', () => {
+                    // Toggle visibility of the details
+                    detailDiv.style.display = detailDiv.style.display === 'none' ? 'block' : 'none';
+                });
+
+                detailDiv.appendChild(description);
+                detailDiv.appendChild(ingredientsHeader);
+                detailDiv.appendChild(ingredientsList);
+                detailDiv.appendChild(stepsHeader);
+                detailDiv.appendChild(stepsList);
+
+                recipeElem.appendChild(title);
+                recipeElem.appendChild(detailDiv);
+                container.appendChild(recipeElem);
+            });
+        }
+
+
+        fetchRecipes();
+    </script>
+
+    </script>
+</body>
+
+</html>
